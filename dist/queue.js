@@ -4,15 +4,15 @@ loopback = require('loopback');
 
 module.exports = function(Queue) {
   Queue.prototype.get = function(id, callback) {
-    var Model, query;
+    var Task, query;
     query = {
       id: id
     };
     if (!this.universal) {
       query.queue = this.name;
     }
-    Model = loopback.getModel(this.model);
-    return Model.findOne(query, function(err, data) {
+    Task = loopback.getModel('Task');
+    return Task.findOne(query, function(err, data) {
       if (err) {
         return callback(err);
       }

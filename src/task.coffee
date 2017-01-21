@@ -53,15 +53,12 @@ module.exports = (Task) ->
     if options.queue
       query.queue = options.queue
 
+    if options.chain
+      query.chain = $all: options.chain
+
     if options.minPriority != undefined
       query.priority =
         $gte: options.minPriority
-
-    if options.callbacks != undefined
-      callback_names = Object.keys options.callbacks
-
-      query.chain =
-        $in: callback_names
 
     sort =
       priority: -1

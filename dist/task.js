@@ -42,7 +42,7 @@ module.exports = function(Task) {
     return this.$attempts = result;
   };
   Task.dequeue = function(options, callback) {
-    var callback_names, connector, opts, query, sort, update;
+    var connector, opts, query, sort, update;
     if (callback === void 0) {
       callback = options;
       options = {};
@@ -56,15 +56,14 @@ module.exports = function(Task) {
     if (options.queue) {
       query.queue = options.queue;
     }
+    if (options.chain) {
+      query.chain = {
+        $all: options.chain
+      };
+    }
     if (options.minPriority !== void 0) {
       query.priority = {
         $gte: options.minPriority
-      };
-    }
-    if (options.callbacks !== void 0) {
-      callback_names = Object.keys(options.callbacks);
-      query.chain = {
-        $in: callback_names
       };
     }
     sort = {

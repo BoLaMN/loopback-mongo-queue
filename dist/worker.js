@@ -15,25 +15,21 @@ module.exports = function(Worker) {
       this.universal = true;
       this.queues = new Queue({
         name: '*',
-        universal: true,
-        model: this.model
+        universal: true
       });
     }
     if (!Array.isArray(this.queues)) {
       this.queues = [this.queues];
     }
-    return this.queues = this.queues.map((function(_this) {
-      return function(name) {
-        var queue;
-        if (typeof name === 'string') {
-          queue = new Queue({
-            name: name,
-            model: _this.model
-          });
-        }
-        return queue;
-      };
-    })(this));
+    return this.queues = this.queues.map(function(name) {
+      var queue;
+      if (typeof name === 'string') {
+        queue = new Queue({
+          name: name
+        });
+      }
+      return queue;
+    });
   };
   Worker.prototype.register = function(callbacks) {
     var name, results1;

@@ -9,9 +9,9 @@ module.exports = (Queue) ->
     if not @universal
       query.queue = @name
 
-    Model = loopback.getModel @model
+    Task = loopback.getModel 'Task'
 
-    Model.findOne query, (err, data) ->
+    Task.findOne query, (err, data) ->
       if err
         return callback err
 

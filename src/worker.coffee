@@ -17,16 +17,14 @@ module.exports = (Worker) ->
       @queues = new Queue
         name: '*'
         universal: true
-        model: @model
 
     if not Array.isArray @queues
       @queues = [ @queues ]
 
-    @queues = @queues.map (name) =>
+    @queues = @queues.map (name) ->
       if typeof name is 'string'
         queue = new Queue
           name: name
-          model: @model
 
       queue
 

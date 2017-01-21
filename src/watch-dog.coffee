@@ -26,9 +26,9 @@ module.exports = (WatchDog) ->
 
     cb = callback.bind this
 
-    Model = loopback.getModel @queue.model
+    Task = loopback.getModel 'Task'
 
-    Model.update query, sort, update, options, (err, doc) ->
+    Task.update query, sort, update, options, (err, doc) ->
       cb err, if doc then new Model(doc) else doc
 
   WatchDog::cleanup = ->
