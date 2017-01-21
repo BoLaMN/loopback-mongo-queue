@@ -1,0 +1,29 @@
+{
+  "name": "Profiler",
+  "base": "Model",
+  "properties": {
+    "task": {
+      "type": "object"
+    },
+    "log": {
+      "type": "object",
+      "default": {}
+    },
+    "steps": {
+      "type": [
+        "string"
+      ],
+      "default": []
+    }
+  },
+  "validations": [],
+  "relations": {},
+  "acls": [
+    {
+      "principalType": "Role",
+      "principalId": "$everyone",
+      "permission": "DENY"
+    }
+  ],
+  "methods": {}
+}

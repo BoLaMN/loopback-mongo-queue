@@ -1,0 +1,27 @@
+{
+  "name": "Log",
+  "base": "Model",
+  "properties": {
+    "args": {
+      "type": "array"
+    },
+    "time": {
+      "type": "date",
+      "defaultFn": "now"
+    },
+    "type": {
+      "type": "string",
+      "required": true
+    }
+  },
+  "validations": [],
+  "relations": {},
+  "acls": [
+    {
+      "principalType": "Role",
+      "principalId": "$everyone",
+      "permission": "DENY"
+    }
+  ],
+  "methods": {}
+}

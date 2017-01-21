@@ -1,0 +1,20 @@
+{
+  "name": "loopback-mongo-queue",
+  "version": "1.0.1",
+  "description": "loopback mongo based queue",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": {
+    "name": "BoLaMN",
+    "url": "https://github.com/BoLaMN"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BoLaMN/loopback-mongo-queue"
+  },
+  "license": "MIT",
+  "dependencies": {
+  }
+}

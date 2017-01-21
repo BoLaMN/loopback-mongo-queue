@@ -1,0 +1,32 @@
+name: "WatchDog"
+
+base: "Model"
+
+properties:
+
+  queue:
+    type: 'object'
+
+  stopped:
+    type: 'boolean'
+    default: true
+
+  interval:
+    type: 'number'
+    default: 60000
+
+  gracePeriod:
+    type: 'number'
+    default: 10000
+
+validations: []
+relations: {}
+
+acls: [
+  {
+    principalType: "Role"
+    principalId: "$everyone"
+    permission: "DENY"
+  }
+]
+methods: {}

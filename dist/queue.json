@@ -1,0 +1,31 @@
+{
+  "name": "Queue",
+  "base": "Model",
+  "mongodb": {
+    "allowExtendedOperators": true
+  },
+  "properties": {
+    "name": {
+      "type": "string",
+      "default": "default"
+    },
+    "model": {
+      "type": "string",
+      "default": "Task"
+    },
+    "universal": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "validations": [],
+  "relations": {},
+  "acls": [
+    {
+      "principalType": "Role",
+      "principalId": "$everyone",
+      "permission": "DENY"
+    }
+  ],
+  "methods": {}
+}

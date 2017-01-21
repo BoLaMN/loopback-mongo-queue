@@ -1,0 +1,76 @@
+{
+  "name": "Task",
+  "base": "PersistedModel",
+  "strict": false,
+  "mongodb": {
+    "allowExtendedOperators": true
+  },
+  "properties": {
+    "chain": {
+      "type": [
+        "string"
+      ]
+    },
+    "events": {
+      "type": "object"
+    },
+    "strategy": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "default": "new"
+    },
+    "params": {
+      "type": "object"
+    },
+    "queue": {
+      "type": "string",
+      "required": true
+    },
+    "count": {
+      "type": "number",
+      "default": 0
+    },
+    "delay": {
+      "type": "date",
+      "defaultFn": "now"
+    },
+    "priority": {
+      "type": "number",
+      "default": 0
+    },
+    "ended": {
+      "type": "date"
+    },
+    "enqueued": {
+      "type": "date",
+      "defaultFn": "now"
+    },
+    "result": {
+      "type": "object"
+    },
+    "error": {
+      "type": "object"
+    },
+    "stack": {
+      "type": "object"
+    }
+  },
+  "validations": [],
+  "relations": {},
+  "acls": [
+    {
+      "principalType": "Role",
+      "principalId": "$everyone",
+      "permission": "DENY"
+    },
+    {
+      "principalType": "Role",
+      "principalId": "workflow:read",
+      "permission": "ALLOW",
+      "accessType": "READ"
+    }
+  ],
+  "methods": {}
+}

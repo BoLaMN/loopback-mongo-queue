@@ -1,0 +1,46 @@
+{
+  "name": "Worker",
+  "base": "Model",
+  "properties": {
+    "name": {
+      "type": "string",
+      "default": "default"
+    },
+    "model": {
+      "type": "string",
+      "default": "Task"
+    },
+    "queues": {
+      "type": "array"
+    },
+    "universal": {
+      "type": "boolean",
+      "default": false
+    },
+    "empty": {
+      "type": "number",
+      "default": 0
+    },
+    "interval": {
+      "type": "number",
+      "default": 5000
+    },
+    "callbacks": {
+      "type": "object",
+      "default": {}
+    },
+    "minPriority": {
+      "type": "number"
+    }
+  },
+  "validations": [],
+  "relations": {},
+  "acls": [
+    {
+      "principalType": "Role",
+      "principalId": "$everyone",
+      "permission": "DENY"
+    }
+  ],
+  "methods": {}
+}

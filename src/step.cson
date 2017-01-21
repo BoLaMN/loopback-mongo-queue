@@ -1,0 +1,28 @@
+name: "Step"
+
+base: "Model"
+
+properties:
+
+  started:
+    type: 'date'
+    defaultFn: 'now'
+
+  ended:
+    type: 'date'
+
+  logs:
+    type: 'array'
+    default: []
+
+validations: []
+relations: {}
+
+acls: [
+  {
+    principalType: "Role"
+    principalId: "$everyone"
+    permission: "DENY"
+  }
+]
+methods: {}
