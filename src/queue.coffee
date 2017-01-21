@@ -13,12 +13,12 @@ module.exports = (Queue) ->
 
     Model.findOne query, (err, data) ->
       if err
-        return callback(err)
+        return callback err
 
       callback null, new Task data
 
   Queue::enqueue = (chain, params, options, callback) ->
-    if !callback and typeof options == 'function'
+    if !callback and typeof options is 'function'
       callback = options
       options = {}
 
@@ -39,7 +39,7 @@ module.exports = (Queue) ->
     Task.create data, callback
 
   Queue::dequeue = (options, callback) ->
-    if callback == undefined
+    if callback is undefined
       callback = options
       options = {}
 

@@ -12,7 +12,7 @@ module.exports = (Worker) ->
     Queue = loopback.getModel 'Queue'
 
     if @queues is '*'
-      options.universal = true
+      @universal = true
 
       @queues = new Queue
         name: '*'
@@ -65,7 +65,7 @@ module.exports = (Worker) ->
 
   Worker::_poll = (err, task) ->
     if err
-      return @emit('error', err)
+      return @emit 'error', err
 
     if task
       @empty = 0
@@ -88,7 +88,7 @@ module.exports = (Worker) ->
 
   Worker::poll = ->
     if not @working
-      return @emit('stopped')
+      return @emit 'stopped'
 
     @dequeue @_poll.bind(this)
 

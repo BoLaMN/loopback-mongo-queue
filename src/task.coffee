@@ -32,10 +32,10 @@ module.exports = (Task) ->
     if typeof attempts != 'object'
       throw new Error 'attempts must be an object'
 
-    result = count: parseInt(attempts.count, 10)
+    result = count: parseInt attempts.count, 10
 
     if attempts.delay isnt undefined
-      result.delay = parseInt(attempts.delay, 10)
+      result.delay = parseInt attempts.delay, 10
       result.strategy = attempts.strategy
 
     @$attempts = result
@@ -65,19 +65,22 @@ module.exports = (Task) ->
 
     sort =
       priority: -1
-      id: 1
+      _id: 1
 
     update =
       $set:
         status: Task.DEQUEUED
         dequeued: new Date
 
+    opts =
+      new: true
+
     connector = @getConnector()
 
     connector.connect ->
       collection = connector.collection Task.modelName
 
-      collection.findAndModify query, sort, update, { new: true }, (err, doc) ->
+      collection.findAndModify query, sort, update, opts, (err, doc) ->
         if err or not doc.value
           return callback err
 

@@ -42,7 +42,7 @@ module.exports = function(Task) {
     return this.$attempts = result;
   };
   Task.dequeue = function(options, callback) {
-    var callback_names, connector, query, sort, update;
+    var callback_names, connector, opts, query, sort, update;
     if (callback === void 0) {
       callback = options;
       options = {};
@@ -69,7 +69,7 @@ module.exports = function(Task) {
     }
     sort = {
       priority: -1,
-      id: 1
+      _id: 1
     };
     update = {
       $set: {
@@ -77,13 +77,14 @@ module.exports = function(Task) {
         dequeued: new Date
       }
     };
+    opts = {
+      "new": true
+    };
     connector = this.getConnector();
     return connector.connect(function() {
       var collection;
       collection = connector.collection(Task.modelName);
-      return collection.findAndModify(query, sort, update, {
-        "new": true
-      }, function(err, doc) {
+      return collection.findAndModify(query, sort, update, opts, function(err, doc) {
         if (err || !doc.value) {
           return callback(err);
         }

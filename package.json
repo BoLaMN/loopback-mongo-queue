@@ -1,6 +1,6 @@
 {
   "name": "loopback-mongo-queue",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "loopback mongo based queue",
   "main": "dist/index.js",
   "scripts": {

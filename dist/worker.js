@@ -12,7 +12,7 @@ module.exports = function(Worker) {
     var Queue;
     Queue = loopback.getModel('Queue');
     if (this.queues === '*') {
-      options.universal = true;
+      this.universal = true;
       this.queues = new Queue({
         name: '*',
         universal: true,
