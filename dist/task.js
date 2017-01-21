@@ -1,4 +1,28 @@
 module.exports = function(Task) {
+  var parseAttempts, parseTimeout;
+  parseTimeout = function(timeout) {
+    if (timeout === void 0) {
+      return void 0;
+    }
+    return parseInt(timeout, 10);
+  };
+  parseAttempts = function(attempts) {
+    var result;
+    if (attempts === void 0) {
+      return void 0;
+    }
+    if (typeof attempts !== 'object') {
+      throw new Error('attempts must be an object');
+    }
+    result = {
+      count: parseInt(attempts.count, 10)
+    };
+    if (attempts.delay !== void 0) {
+      result.delay = parseInt(attempts.delay, 10);
+      result.strategy = attempts.strategy;
+    }
+    return result;
+  };
   Task.QUEUED = 'queued';
   Task.DEQUEUED = 'dequeued';
   Task.COMPLETE = 'complete';
@@ -12,6 +36,73 @@ module.exports = function(Task) {
       return attempts.delay * (attempts.count - attempts.remaining);
     }
   };
+  Task.enqueue = function(chain, params, options, callback) {
+    var data, task;
+    if (typeof chain === 'string') {
+      chain = [chain];
+    }
+    data = {
+      chain: chain,
+      params: params,
+      queue: options.queue || this.queue,
+      attempts: parseAttempts(options.attempts),
+      timeout: parseTimeout(options.timeout),
+      delay: options.delay,
+      priority: options.priority
+    };
+    task = new Task(data);
+    return task.enqueue(callback);
+  };
+  Task.dequeue = function(options, callback) {
+    var callback_names, connector, query, sort, update;
+    if (callback === void 0) {
+      callback = options;
+      options = {};
+    }
+    query = {
+      status: Task.QUEUED,
+      delay: {
+        $lte: new Date
+      }
+    };
+    if (options.queue) {
+      query.queue = options.queue;
+    }
+    if (options.minPriority !== void 0) {
+      query.priority = {
+        $gte: options.minPriority
+      };
+    }
+    if (options.callbacks !== void 0) {
+      callback_names = Object.keys(options.callbacks);
+      query.chain = {
+        $in: callback_names
+      };
+    }
+    sort = {
+      priority: -1,
+      id: 1
+    };
+    update = {
+      $set: {
+        status: Task.DEQUEUED,
+        dequeued: new Date
+      }
+    };
+    connector = this.getConnector();
+    return connector.connect(function() {
+      var collection;
+      collection = connector.collection(Task.modelName);
+      return collection.findAndModify(query, sort, update, {
+        "new": true
+      }, function(err, doc) {
+        if (err || !doc.value) {
+          return callback(err);
+        }
+        return callback(null, new Task(doc.value));
+      });
+    });
+  };
   Task.prototype.update = function(data, callback) {
     var query, update;
     query = {
@@ -21,6 +112,14 @@ module.exports = function(Task) {
       $set: data
     };
     return Task.update(query, update, callback);
+  };
+  Task.prototype.log = function(name, log, callback) {
+    var update;
+    update = {
+      events: {}
+    };
+    update.events[name] = log.toObject();
+    return this.update(update, callback);
   };
   Task.prototype.cancel = function(callback) {
     if (this.status !== Task.QUEUED) {
@@ -35,8 +134,7 @@ module.exports = function(Task) {
     return this.update({
       status: Task.COMPLETE,
       ended: new Date,
-      result: result,
-      events: this.events
+      result: result
     }, callback);
   };
   Task.prototype.error = function(err, callback) {
@@ -67,8 +165,7 @@ module.exports = function(Task) {
       status: Task.FAILED,
       ended: new Date,
       error: err.message,
-      stack: err.stack,
-      events: this.events
+      stack: err.stack
     }, callback);
   };
   return Task.prototype.enqueue = function(callback) {

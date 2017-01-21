@@ -14,19 +14,21 @@ module.exports = (Profiler) ->
 
     @log[name]
 
-  Profiler::end = (name) ->
+  Profiler::end = (name, callback) ->
     if not @log[name]
-      return console.error('Stage ', name, ' has not started yet')
+      return console.error 'Stage ', name, ' has not started yet'
 
     @log[name].end()
 
     @steps.splice @steps.indexOf(name), 1
 
+    @task.log name, @log[name], callback
+
   Profiler::endAll = ->
     @steps.forEach (step) =>
       @end step
 
-  Profiler::getEvents = ->
+  Profiler::flush = ->
     Object.keys(@log).reduce (memo, key) =>
       memo[key] = @log[key].toObject()
       memo

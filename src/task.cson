@@ -26,7 +26,7 @@ properties:
 
   queue:
     type: 'string'
-    required: true
+    default: 'default'
 
   count:
     type: 'number'
@@ -57,7 +57,12 @@ properties:
     type: 'object'
 
 validations: []
-relations: {}
+
+relations:
+
+  item:
+    type: "belongsTo"
+    polymorphic: true
 
 acls: [
   {

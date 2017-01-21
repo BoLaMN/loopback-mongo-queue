@@ -133,32 +133,33 @@ module.exports = (Worker) ->
 
     @process task, done
 
-  Worker::process = (data, callback) ->
+  Worker::process = (task, callback) ->
     Profiler = loopback.getModel 'Profiler'
 
-    profiler = new Profiler()
+    profiler = new Profiler
+      task: task
+
     callbacks = @callbacks
 
     stop = false
 
-    async.eachSeries data.chain, (item, done) ->
+    async.eachSeries task.chain, (item, done) ->
       if stop
-        return done null, data.results
+        return done null, task.results
 
       func = callbacks[item]
 
       if not func
-        return done new Error('No callback registered for `' + item + '`')
+        return done new Error 'No callback registered for `' + item + '`'
 
       logger = profiler.start item
 
       finish = (err, results) ->
         if results
-          data.results = results
+          task.results = results
 
-        profiler.end item
-
-        done err, data.results
+        profiler.end item, ->
+          done err, task.results
 
       context =
         done: (err, results) ->
@@ -168,10 +169,8 @@ module.exports = (Worker) ->
 
       bound = func.bind context
 
-      bound data, finish
+      bound task, finish
     , (err) ->
-      data.events = profiler.getEvents()
-
-      callback err, data.results
+      callback err, task.results
 
     return

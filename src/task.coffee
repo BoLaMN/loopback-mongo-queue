@@ -1,5 +1,26 @@
 module.exports = (Task) ->
 
+  parseTimeout = (timeout) ->
+    if timeout == undefined
+      return undefined
+
+    parseInt timeout, 10
+
+  parseAttempts = (attempts) ->
+    if attempts == undefined
+      return undefined
+
+    if typeof attempts != 'object'
+      throw new Error('attempts must be an object')
+
+    result = count: parseInt(attempts.count, 10)
+
+    if attempts.delay isnt undefined
+      result.delay = parseInt(attempts.delay, 10)
+      result.strategy = attempts.strategy
+
+    result
+
   Task.QUEUED = 'queued'
   Task.DEQUEUED = 'dequeued'
   Task.COMPLETE = 'complete'
@@ -13,6 +34,66 @@ module.exports = (Task) ->
     exponential: (attempts) ->
       attempts.delay * (attempts.count - (attempts.remaining))
 
+  Task.enqueue = (chain, params, options, callback) ->
+    if typeof chain is 'string'
+      chain = [ chain ]
+
+    data =
+      chain: chain
+      params: params
+      queue: options.queue or @queue
+      attempts: parseAttempts options.attempts
+      timeout: parseTimeout options.timeout
+      delay: options.delay
+      priority: options.priority
+
+    task = new Task data
+
+    task.enqueue callback
+
+  Task.dequeue = (options, callback) ->
+    if callback == undefined
+      callback = options
+      options = {}
+
+    query =
+      status: Task.QUEUED
+      delay:
+        $lte: new Date
+
+    if options.queue
+      query.queue = options.queue
+
+    if options.minPriority != undefined
+      query.priority =
+        $gte: options.minPriority
+
+    if options.callbacks != undefined
+      callback_names = Object.keys options.callbacks
+
+      query.chain =
+        $in: callback_names
+
+    sort =
+      priority: -1
+      id: 1
+
+    update =
+      $set:
+        status: Task.DEQUEUED
+        dequeued: new Date
+
+    connector = @getConnector()
+
+    connector.connect ->
+      collection = connector.collection Task.modelName
+
+      collection.findAndModify query, sort, update, { new: true }, (err, doc) ->
+        if err or not doc.value
+          return callback err
+
+        callback null, new Task doc.value
+
   Task::update = (data, callback) ->
     query =
       id: @id or @_id
@@ -21,6 +102,15 @@ module.exports = (Task) ->
       $set: data
 
     Task.update query, update, callback
+
+  Task::log = (name, log, callback) ->
+
+    update =
+      events: {}
+
+    update.events[name] = log.toObject()
+
+    @update update, callback
 
   Task::cancel = (callback) ->
     if @status isnt Task.QUEUED
@@ -37,7 +127,6 @@ module.exports = (Task) ->
       status: Task.COMPLETE
       ended: new Date
       result: result
-      events: @events
     , callback
 
   Task::error = (err, callback) ->
@@ -70,7 +159,6 @@ module.exports = (Task) ->
       ended: new Date
       error: err.message
       stack: err.stack
-      events: @events
     , callback
 
   Task::enqueue = (callback) ->

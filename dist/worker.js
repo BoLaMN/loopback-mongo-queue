@@ -151,16 +151,18 @@ module.exports = function(Worker) {
     }
     return this.process(task, done);
   };
-  return Worker.prototype.process = function(data, callback) {
+  return Worker.prototype.process = function(task, callback) {
     var Profiler, callbacks, profiler, stop;
     Profiler = loopback.getModel('Profiler');
-    profiler = new Profiler();
+    profiler = new Profiler({
+      task: task
+    });
     callbacks = this.callbacks;
     stop = false;
-    async.eachSeries(data.chain, function(item, done) {
+    async.eachSeries(task.chain, function(item, done) {
       var bound, context, finish, func, logger;
       if (stop) {
-        return done(null, data.results);
+        return done(null, task.results);
       }
       func = callbacks[item];
       if (!func) {
@@ -169,10 +171,11 @@ module.exports = function(Worker) {
       logger = profiler.start(item);
       finish = function(err, results) {
         if (results) {
-          data.results = results;
+          task.results = results;
         }
-        profiler.end(item);
-        return done(err, data.results);
+        return profiler.end(item, function() {
+          return done(err, task.results);
+        });
       };
       context = {
         done: function(err, results) {
@@ -182,10 +185,9 @@ module.exports = function(Worker) {
         log: logger
       };
       bound = func.bind(context);
-      return bound(data, finish);
+      return bound(task, finish);
     }, function(err) {
-      data.events = profiler.getEvents();
-      return callback(err, data.results);
+      return callback(err, task.results);
     });
   };
 };
