@@ -85,21 +85,28 @@ module.exports = function(Task) {
       var collection;
       collection = connector.collection(Task.modelName);
       return collection.findAndModify(query, sort, update, opts, function(err, doc) {
+        var id, item, task;
         if (err || !doc.value) {
           return callback(err);
         }
-        return callback(null, new Task(doc.value));
+        item = doc.value;
+        id = item._id;
+        delete item._id;
+        task = new Task(item);
+        task.setId(id);
+        return callback(null, task);
       });
     });
   };
   Task.prototype.update = function(data, callback) {
     var query, update;
     query = {
-      id: this.id || this._id
+      id: this.id
     };
     update = {
       $set: data
     };
+    this.setAttributes(data);
     return Task.update(query, update, callback);
   };
   Task.prototype.log = function(name, log, callback) {

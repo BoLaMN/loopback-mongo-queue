@@ -84,14 +84,24 @@ module.exports = (Task) ->
         if err or not doc.value
           return callback err
 
-        callback null, new Task doc.value
+        item = doc.value
+
+        id = item._id
+        delete item._id
+
+        task = new Task item
+        task.setId id
+
+        callback null, task
 
   Task::update = (data, callback) ->
     query =
-      id: @id or @_id
+      id: @id
 
     update =
       $set: data
+
+    @setAttributes data
 
     Task.update query, update, callback
 
