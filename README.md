@@ -81,3 +81,48 @@ module.exports = (app) ->
 
     return
 ```
+
+* after task complete model data 
+
+```
+{
+  "chain": [
+    "uppercase"
+  ],
+  "events": {
+    "uppercase": {
+      "started": "2017-01-21T10:49:40.442Z",
+      "ended": "2017-01-21T10:49:43.446Z",
+      "logs": [
+        {
+          "args": [
+            "setting bar to upper case"
+          ],
+          "time": "2017-01-21T10:49:40.444Z",
+          "type": "info"
+        },
+        {
+          "args": [
+            {}
+          ],
+          "time": "2017-01-21T10:49:40.444Z",
+          "type": "error"
+        }
+      ]
+    }
+  },
+  "status": "complete",
+  "params": {
+    "text": "bar"
+  },
+  "queue": "foo",
+  "count": 0,
+  "delay": "2017-01-21T10:49:34.943Z",
+  "priority": 0,
+  "ended": "2017-01-21T10:49:43.447Z",
+  "enqueued": "2017-01-21T10:49:34.943Z",
+  "result": "BAR",
+  "id": "58833cbff73b6ed1ec9f8f91",
+  "dequeued": "2017-01-21T10:49:40.434Z"
+}
+```
