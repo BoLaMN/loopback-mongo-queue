@@ -98,16 +98,18 @@ module.exports = (Task) ->
     update =
       $set: data
 
-    @setAttributes data
+    if not data.events
+      @setAttributes data
 
     Task.update query, update, callback
 
   Task::log = (name, log, callback) ->
 
-    update =
-      events: {}
+    update = {}
+    update['events.' + name] = log.toObject()
 
-    update.events[name] = log.toObject()
+    @events ?= {}
+    @events[name] = log
 
     @update update, callback
 

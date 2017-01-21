@@ -8,15 +8,52 @@ EventEmitter = require('events').EventEmitter;
 
 module.exports = function(Worker) {
   Worker.mixin(EventEmitter);
+  Worker.callbacks = {};
+  Worker.remove = function(id) {
+    var handler;
+    handler = this.callbacks[id];
+    if (!handler) {
+      return null;
+    }
+    delete this.callbacks[id];
+    return handler;
+  };
+  Worker.find = function(id) {
+    return this.callbacks[id] || null;
+  };
+  Worker.findOrAdd = function(id, handler) {
+    handler = this.find(id);
+    if (handler) {
+      return handler;
+    }
+    return this.callbacks[id] = handler;
+  };
+  Worker.getHandlerNames = function() {
+    return Object.keys(this.callbacks);
+  };
+  Worker.create = function(handlers) {
+    return Object.keys(handlers).forEach((function(_this) {
+      return function(handlerName) {
+        if (_this.callbacks[handlerName]) {
+          return new Error(handlerName + ' already registered');
+        }
+        return _this.callbacks[handlerName] = handlers[handlerName];
+      };
+    })(this));
+  };
   Worker.afterInitialize = function() {
     var Queue;
+    this.callbacks = Worker.callbacks;
     Queue = loopback.getModel('Queue');
-    if (this.queues === '*') {
+    if (!this.queues) {
       this.universal = true;
-      this.queues = new Queue({
-        name: '*',
-        universal: true
-      });
+      this.queues = [
+        new Queue({
+          name: '*',
+          universal: true
+        })
+      ];
+      return;
     }
     if (!Array.isArray(this.queues)) {
       this.queues = [this.queues];
@@ -126,6 +163,7 @@ module.exports = function(Worker) {
       this.emit(type, task);
       return this.poll();
     };
+    console.error(err);
     if (err) {
       return task.error(err, finish.bind(this, 'failed'));
     } else {

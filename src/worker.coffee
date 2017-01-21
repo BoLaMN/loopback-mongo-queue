@@ -7,16 +7,53 @@ module.exports = (Worker) ->
 
   Worker.mixin EventEmitter
 
+  Worker.callbacks = {}
+
+  Worker.remove = (id) ->
+    handler = @callbacks[id]
+
+    if not handler
+      return null
+
+    delete @callbacks[id]
+
+    handler
+
+  Worker.find = (id) ->
+    @callbacks[id] or null
+
+  Worker.findOrAdd = (id, handler) ->
+    handler = @find id
+
+    if handler
+      return handler
+
+    @callbacks[id] = handler
+
+  Worker.getHandlerNames = ->
+    Object.keys @callbacks
+
+  Worker.create = (handlers) ->
+    Object.keys(handlers).forEach (handlerName) =>
+      if @callbacks[handlerName]
+        return new Error handlerName + ' already registered'
+
+      @callbacks[handlerName] = handlers[handlerName]
+
   Worker.afterInitialize = ->
+    @callbacks = Worker.callbacks
 
     Queue = loopback.getModel 'Queue'
 
-    if @queues is '*'
+    if not @queues
       @universal = true
 
-      @queues = new Queue
+      @queues = [ new Queue
         name: '*'
         universal: true
+      ]
+
+      return
 
     if not Array.isArray @queues
       @queues = [ @queues ]
@@ -112,6 +149,8 @@ module.exports = (Worker) ->
 
       @emit type, task
       @poll()
+
+    console.error err
 
     if err
       task.error err, finish.bind(this, 'failed')

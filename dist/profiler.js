@@ -5,9 +5,6 @@ loopback = require('loopback');
 module.exports = function(Profiler) {
   Profiler.prototype.start = function(name) {
     var Step;
-    if (this.log[name]) {
-      console.warn('Stage name ', name, ' is already in use');
-    }
     Step = loopback.getModel('Step');
     this.log[name] = new Step();
     this.steps.push(name);
@@ -28,7 +25,7 @@ module.exports = function(Profiler) {
       };
     })(this));
   };
-  return Profiler.prototype.flush = function() {
+  Profiler.prototype.flush = function() {
     return Object.keys(this.log).reduce((function(_this) {
       return function(memo, key) {
         memo[key] = _this.log[key].toObject();

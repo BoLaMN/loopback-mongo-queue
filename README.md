@@ -8,6 +8,10 @@ Queue:
   dataSource: "mongo"
   public: false
 
+Workflow:
+  dataSource: "mongo"
+  public: false
+
 Task:
   dataSource: "mongo"
 
@@ -28,27 +32,42 @@ Step:
   public: false
 ```
 
-* example 
+* example
 
 ```
 
 module.exports = (app) ->
 
-  { Worker, Queue } = app.models
+  { Worker, Queue, Workflow, Task } = app.models
 
-  worker = new Worker
-    queues: [ 'foo' ]
-
-  worker.register
+  fns =
     uppercase: (task, callback) ->
       { params } = task
 
       @log.info 'setting ' + params.text + ' to upper case'
       @log.error new Error 'testing error'
 
-      uppercase = params.text.toUpperCase()
+      setTimeout ->
+        uppercase = params.text.toUpperCase()
+        callback null, uppercase
+      , 3000
 
-      callback null, uppercase
+    prepend: (task, callback) ->
+      { results } = task
+
+      @log.info 'add foo to ' + results
+      @log.error new Error 'testing error'
+
+      text = 'foo ' + results
+
+      callback null, text
+
+  worker = new Worker()
+  worker.register fns
+
+  # registers global functions
+
+  Worker.create fns
 
   worker.on 'dequeued', (data) ->
     console.log 'Dequeued:'
@@ -65,24 +84,36 @@ module.exports = (app) ->
   worker.on 'error', (err) ->
     console.log 'Error:'
     console.log err
-
     worker.stop()
 
   worker.start()
 
-  queue = new Queue
-    name: 'foo'
-
-  queue.enqueue 'uppercase', { text: 'bar' }, (err, job) ->
+  enqueued = (err, job) ->
     if err
       throw err
 
     console.log 'Enqueued:', job
 
-    return
+  Task.create
+    chain: 'uppercase'
+    params:
+      text: 'bar'
+  , enqueued
+
+  queue = new Queue
+    name: 'foo'
+
+  queue.enqueue 'uppercase', { text: 'bar' }, enqueued
+
+  workflow = new Workflow
+    name: 'my workflow'
+    chain: [ 'uppercase', 'prepend' ]
+
+  workflow.enqueue { text: 'bar' }, enqueued
+
 ```
 
-* after task complete model data 
+* after task complete model data
 
 ```
 {

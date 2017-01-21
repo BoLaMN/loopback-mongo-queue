@@ -1,19 +1,21 @@
-name: "Log"
+name: "Workflow"
 
-base: "TransientModel"
+base: "PersistedModel"
+
+mongodb:
+  allowExtendedOperators: true
 
 properties:
 
-  args:
-    type: 'array'
-
-  time:
-    type: 'date'
-    defaultFn: 'now'
-
-  type:
+  name:
     type: 'string'
     required: true
+
+  chain:
+    type: [ 'string' ]
+
+  queue:
+    type: 'string'
 
 validations: []
 relations: {}

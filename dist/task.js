@@ -105,15 +105,19 @@ module.exports = function(Task) {
     update = {
       $set: data
     };
-    this.setAttributes(data);
+    if (!data.events) {
+      this.setAttributes(data);
+    }
     return Task.update(query, update, callback);
   };
   Task.prototype.log = function(name, log, callback) {
     var update;
-    update = {
-      events: {}
-    };
-    update.events[name] = log.toObject();
+    update = {};
+    update['events.' + name] = log.toObject();
+    if (this.events == null) {
+      this.events = {};
+    }
+    this.events[name] = log;
     return this.update(update, callback);
   };
   Task.prototype.cancel = function(callback) {

@@ -3,9 +3,6 @@ loopback = require 'loopback'
 module.exports = (Profiler) ->
 
   Profiler::start = (name) ->
-    if @log[name]
-      console.warn 'Stage name ', name, ' is already in use'
-
     Step = loopback.getModel 'Step'
 
     @log[name] = new Step()
@@ -33,3 +30,5 @@ module.exports = (Profiler) ->
       memo[key] = @log[key].toObject()
       memo
     , {}
+
+  return
