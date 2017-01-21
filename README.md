@@ -103,7 +103,7 @@ module.exports = (app) ->
         },
         {
           "args": [
-            {}
+            "error.message", "error.stack"
           ],
           "time": "2017-01-21T10:49:40.444Z",
           "type": "error"
