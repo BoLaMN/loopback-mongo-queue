@@ -20,7 +20,7 @@ module.exports = function(Queue) {
     });
   };
   Queue.prototype.enqueue = function(chain, params, options, callback) {
-    var Task;
+    var Task, data;
     if (!callback && typeof options === 'function') {
       callback = options;
       options = {};
@@ -29,7 +29,16 @@ module.exports = function(Queue) {
       options.queue = this.name;
     }
     Task = loopback.getModel('Task');
-    return Task.enqueue(chain, params, options, callback);
+    data = new Task({
+      chain: chain,
+      params: params,
+      queue: options.queue || this.name,
+      attempts: options.attempts,
+      timeout: options.timeout,
+      delay: options.delay,
+      priority: options.priority
+    });
+    return Task.create(data, callback);
   };
   return Queue.prototype.dequeue = function(options, callback) {
     var Task;

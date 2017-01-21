@@ -1,12 +1,30 @@
 module.exports = function(Task) {
-  var parseAttempts, parseTimeout;
-  parseTimeout = function(timeout) {
+  Task.QUEUED = 'queued';
+  Task.DEQUEUED = 'dequeued';
+  Task.COMPLETE = 'complete';
+  Task.FAILED = 'failed';
+  Task.CANCELLED = 'cancelled';
+  Task.strategies = {
+    linear: function(attempts) {
+      return attempts.delay;
+    },
+    exponential: function(attempts) {
+      return attempts.delay * (attempts.count - attempts.remaining);
+    }
+  };
+  Task.setter.chain = function(chain) {
+    if (typeof chain === 'string') {
+      chain = [chain];
+    }
+    return this.$chain = chain;
+  };
+  Task.setter.timeout = function(timeout) {
     if (timeout === void 0) {
       return void 0;
     }
-    return parseInt(timeout, 10);
+    return this.$timeout = parseInt(timeout, 10);
   };
-  parseAttempts = function(attempts) {
+  Task.setter.attempts = function(attempts) {
     var result;
     if (attempts === void 0) {
       return void 0;
@@ -21,37 +39,7 @@ module.exports = function(Task) {
       result.delay = parseInt(attempts.delay, 10);
       result.strategy = attempts.strategy;
     }
-    return result;
-  };
-  Task.QUEUED = 'queued';
-  Task.DEQUEUED = 'dequeued';
-  Task.COMPLETE = 'complete';
-  Task.FAILED = 'failed';
-  Task.CANCELLED = 'cancelled';
-  Task.strategies = {
-    linear: function(attempts) {
-      return attempts.delay;
-    },
-    exponential: function(attempts) {
-      return attempts.delay * (attempts.count - attempts.remaining);
-    }
-  };
-  Task.enqueue = function(chain, params, options, callback) {
-    var data, task;
-    if (typeof chain === 'string') {
-      chain = [chain];
-    }
-    data = {
-      chain: chain,
-      params: params,
-      queue: options.queue || this.queue,
-      attempts: parseAttempts(options.attempts),
-      timeout: parseTimeout(options.timeout),
-      delay: options.delay,
-      priority: options.priority
-    };
-    task = new Task(data);
-    return task.enqueue(callback);
+    return this.$attempts = result;
   };
   Task.dequeue = function(options, callback) {
     var callback_names, connector, query, sort, update;
@@ -160,23 +148,12 @@ module.exports = function(Task) {
       return this.fail(err, callback);
     }
   };
-  Task.prototype.fail = function(err, callback) {
+  return Task.prototype.fail = function(err, callback) {
     return this.update({
       status: Task.FAILED,
       ended: new Date,
       error: err.message,
       stack: err.stack
     }, callback);
-  };
-  return Task.prototype.enqueue = function(callback) {
-    this.status = Task.QUEUED;
-    this.enqueued = new Date;
-    if (this.delay === void 0) {
-      this.delay = new Date;
-    }
-    if (this.priority === void 0) {
-      this.priority = 0;
-    }
-    return Task.create(this, callback);
   };
 };

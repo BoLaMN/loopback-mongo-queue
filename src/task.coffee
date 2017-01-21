@@ -1,26 +1,5 @@
 module.exports = (Task) ->
 
-  parseTimeout = (timeout) ->
-    if timeout == undefined
-      return undefined
-
-    parseInt timeout, 10
-
-  parseAttempts = (attempts) ->
-    if attempts == undefined
-      return undefined
-
-    if typeof attempts != 'object'
-      throw new Error('attempts must be an object')
-
-    result = count: parseInt(attempts.count, 10)
-
-    if attempts.delay isnt undefined
-      result.delay = parseInt(attempts.delay, 10)
-      result.strategy = attempts.strategy
-
-    result
-
   Task.QUEUED = 'queued'
   Task.DEQUEUED = 'dequeued'
   Task.COMPLETE = 'complete'
@@ -34,22 +13,32 @@ module.exports = (Task) ->
     exponential: (attempts) ->
       attempts.delay * (attempts.count - (attempts.remaining))
 
-  Task.enqueue = (chain, params, options, callback) ->
+  Task.setter.chain = (chain) ->
     if typeof chain is 'string'
       chain = [ chain ]
 
-    data =
-      chain: chain
-      params: params
-      queue: options.queue or @queue
-      attempts: parseAttempts options.attempts
-      timeout: parseTimeout options.timeout
-      delay: options.delay
-      priority: options.priority
+    @$chain = chain
 
-    task = new Task data
+  Task.setter.timeout = (timeout) ->
+    if timeout is undefined
+      return undefined
 
-    task.enqueue callback
+    @$timeout = parseInt timeout, 10
+
+  Task.setter.attempts = (attempts) ->
+    if attempts is undefined
+      return undefined
+
+    if typeof attempts != 'object'
+      throw new Error 'attempts must be an object'
+
+    result = count: parseInt(attempts.count, 10)
+
+    if attempts.delay isnt undefined
+      result.delay = parseInt(attempts.delay, 10)
+      result.strategy = attempts.strategy
+
+    @$attempts = result
 
   Task.dequeue = (options, callback) ->
     if callback == undefined
@@ -160,16 +149,3 @@ module.exports = (Task) ->
       error: err.message
       stack: err.stack
     , callback
-
-  Task::enqueue = (callback) ->
-
-    @status = Task.QUEUED
-    @enqueued = new Date
-
-    if @delay is undefined
-      @delay = new Date
-
-    if @priority is undefined
-      @priority = 0
-
-    Task.create this, callback

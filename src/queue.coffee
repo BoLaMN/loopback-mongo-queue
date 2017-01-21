@@ -27,7 +27,16 @@ module.exports = (Queue) ->
 
     Task = loopback.getModel 'Task'
 
-    Task.enqueue chain, params, options, callback
+    data = new Task
+      chain: chain
+      params: params
+      queue: options.queue or @name
+      attempts: options.attempts
+      timeout: options.timeout
+      delay: options.delay
+      priority: options.priority
+
+    Task.create data, callback
 
   Queue::dequeue = (options, callback) ->
     if callback == undefined

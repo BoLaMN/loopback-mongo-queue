@@ -19,7 +19,7 @@ properties:
 
   status:
     type: 'string'
-    default: 'new'
+    default: 'queued'
 
   params:
     type: 'object'
