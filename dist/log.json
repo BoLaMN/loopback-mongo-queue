@@ -1,6 +1,6 @@
 {
   "name": "Log",
-  "base": "Model",
+  "base": "TransientModel",
   "properties": {
     "args": {
       "type": "array"

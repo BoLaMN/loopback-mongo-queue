@@ -1,19 +1,21 @@
 {
-  "name": "Profiler",
-  "base": "Model",
+  "name": "Workflow",
+  "base": "PersistedModel",
+  "mongodb": {
+    "allowExtendedOperators": true
+  },
   "properties": {
-    "task": {
-      "type": "object"
+    "name": {
+      "type": "string",
+      "required": true
     },
-    "log": {
-      "type": "object",
-      "default": {}
-    },
-    "steps": {
+    "chain": {
       "type": [
         "string"
-      ],
-      "default": []
+      ]
+    },
+    "queue": {
+      "type": "string"
     }
   },
   "validations": [],

@@ -12,25 +12,33 @@
       ]
     },
     "events": {
-      "type": "object"
-    },
-    "strategy": {
-      "type": "string"
+      "type": [
+        "object"
+      ],
+      "default": []
     },
     "status": {
       "type": "string",
-      "default": "new"
+      "default": "queued"
     },
     "params": {
       "type": "object"
     },
     "queue": {
       "type": "string",
-      "required": true
+      "default": "default"
     },
     "count": {
       "type": "number",
       "default": 0
+    },
+    "attempts": {
+      "type": "number",
+      "default": 5
+    },
+    "remaining": {
+      "type": "number",
+      "default": 5
     },
     "delay": {
       "type": "date",
@@ -58,7 +66,12 @@
     }
   },
   "validations": [],
-  "relations": {},
+  "relations": {
+    "item": {
+      "type": "belongsTo",
+      "polymorphic": true
+    }
+  },
   "acls": [
     {
       "principalType": "Role",

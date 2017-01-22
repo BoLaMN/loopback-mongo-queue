@@ -1,3 +1,6 @@
+loopback = require 'loopback'
+async    = require 'async'
+
 module.exports = (Task) ->
 
   Task.QUEUED = 'queued'
@@ -5,13 +8,6 @@ module.exports = (Task) ->
   Task.COMPLETE = 'complete'
   Task.FAILED = 'failed'
   Task.CANCELLED = 'cancelled'
-
-  Task.strategies =
-    linear: (attempts) ->
-      attempts.delay
-
-    exponential: (attempts) ->
-      attempts.delay * (attempts.count - (attempts.remaining))
 
   Task.setter.chain = (chain) ->
     if typeof chain is 'string'
@@ -24,21 +20,6 @@ module.exports = (Task) ->
       return undefined
 
     @$timeout = parseInt timeout, 10
-
-  Task.setter.attempts = (attempts) ->
-    if attempts is undefined
-      return undefined
-
-    if typeof attempts != 'object'
-      throw new Error 'attempts must be an object'
-
-    result = count: parseInt attempts.count, 10
-
-    if attempts.delay isnt undefined
-      result.delay = parseInt attempts.delay, 10
-      result.strategy = attempts.strategy
-
-    @$attempts = result
 
   Task.dequeue = (options, callback) ->
     if callback == undefined
@@ -106,10 +87,11 @@ module.exports = (Task) ->
   Task::log = (name, log, callback) ->
 
     update = {}
-    update['events.' + name] = log.toObject()
+    update['events.' + @count + '.' + name] = log.toObject()
 
-    @events ?= {}
-    @events[name] = log
+    @events ?= []
+    @events[@count] ?= {}
+    @events[@count][name] = log
 
     @update update, callback
 
@@ -130,28 +112,29 @@ module.exports = (Task) ->
       result: result
     , callback
 
-  Task::error = (err, callback) ->
-    remaining = 0
-    strategies = Task.strategies
-
+  Task::errored = (err, callback) ->
     if @attempts
-      remaining = @attempts.remaining = (@attempts.remaining or @attempts.count) - 1
+      @remaining = @remaining - 1
 
-    if remaining > 0
-      strategy = strategies[@attempts.strategy or 'linear']
+    if @attempts isnt @count or @remaining > 0
+      wait = 50 * 2 ** @count
 
-      if not strategy
-        console.error 'No such retry strategy: `' + @attempts.strategy + '`'
-        console.error 'Using linear strategy'
+      @delay = new Date new Date().getTime() + wait
+      @count = @count + 1
 
-      if @attempts.delay isnt undefined
-        wait = strategy(@attempts)
-      else
-        wait = 0
-
-      @delay wait, callback
+      @reenqueue callback
     else
       @fail err, callback
+
+  Task::reenqueue = (callback) ->
+
+    @update
+      status: Task.QUEUED
+      enqueued: new Date
+      remaining: @remaining
+      count: @count
+      delay: @delay
+    , callback
 
   Task::fail = (err, callback) ->
 
@@ -161,3 +144,52 @@ module.exports = (Task) ->
       error: err.message
       stack: err.stack
     , callback
+
+  Task::process = (callbacks, callback) ->
+    if !callback and typeof callbacks is 'function'
+      callback = callbacks
+      ccallbacks = null
+
+    task = this
+
+    Profiler = loopback.getModel 'Profiler'
+    Worker = loopback.getModel 'Worker'
+
+    profiler = new Profiler
+      task: task
+
+    callbacks = callbacks or Worker.callbacks
+
+    stop = false
+
+    async.eachSeries task.chain, (item, done) ->
+      if stop
+        return done null, task.results
+
+      func = callbacks[item]
+
+      if not func
+        return done new Error 'No callback registered for `' + item + '`'
+
+      logger = profiler.start item
+
+      finish = (err, results) ->
+        if results
+          task.results = results
+
+        profiler.end item, ->
+          done err, task.results
+
+      context =
+        done: (err, results) ->
+          stop = true
+          finish err, results
+        log: logger
+
+      bound = func.bind context
+
+      bound task, finish
+    , (err) ->
+      callback err, task.results
+
+    return

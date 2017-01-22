@@ -1,8 +1,6 @@
-var EventEmitter, async, loopback;
+var EventEmitter, loopback;
 
 loopback = require('loopback');
-
-async = require('async');
 
 EventEmitter = require('events').EventEmitter;
 
@@ -73,14 +71,6 @@ module.exports = function(Worker) {
     results1 = [];
     for (name in callbacks) {
       results1.push(this.callbacks[name] = callbacks[name]);
-    }
-    return results1;
-  };
-  Worker.prototype.strategies = function(strategies) {
-    var name, results1;
-    results1 = [];
-    for (name in strategies) {
-      results1.push(this.strategies[name] = strategies[name]);
     }
     return results1;
   };
@@ -165,8 +155,9 @@ module.exports = function(Worker) {
     };
     console.error(err);
     if (err) {
-      return task.error(err, finish.bind(this, 'failed'));
+      return task.errored(err, finish.bind(this, 'failed'));
     } else {
+      result = (result != null ? typeof result.toObject === "function" ? result.toObject() : void 0 : void 0) || result;
       return task.complete(result, finish.bind(this, 'complete'));
     }
   };
@@ -175,6 +166,10 @@ module.exports = function(Worker) {
     finished = false;
     done = (function(_this) {
       return function(err, results) {
+        if (finished) {
+          return;
+        }
+        finished = true;
         return _this.done(task, timer, err, results);
       };
     })(this);
@@ -183,45 +178,11 @@ module.exports = function(Worker) {
         return done(new Error('timeout'));
       }, task.timeout);
     }
-    return this.process(task, done);
+    return task.process(this.callbacks, done);
   };
-  return Worker.prototype.process = function(task, callback) {
-    var Profiler, callbacks, profiler, stop;
-    Profiler = loopback.getModel('Profiler');
-    profiler = new Profiler({
-      task: task
-    });
-    callbacks = this.callbacks;
-    stop = false;
-    async.eachSeries(task.chain, function(item, done) {
-      var bound, context, finish, func, logger;
-      if (stop) {
-        return done(null, task.results);
-      }
-      func = callbacks[item];
-      if (!func) {
-        return done(new Error('No callback registered for `' + item + '`'));
-      }
-      logger = profiler.start(item);
-      finish = function(err, results) {
-        if (results) {
-          task.results = results;
-        }
-        return profiler.end(item, function() {
-          return done(err, task.results);
-        });
-      };
-      context = {
-        done: function(err, results) {
-          stop = true;
-          return finish(err, results);
-        },
-        log: logger
-      };
-      bound = func.bind(context);
-      return bound(task, finish);
-    }, function(err) {
-      return callback(err, task.results);
-    });
-  };
+  process.nextTick(function() {
+    var worker;
+    worker = new Worker();
+    return worker.start();
+  });
 };

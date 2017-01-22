@@ -12,10 +12,8 @@ properties:
     type: [ 'string' ]
 
   events:
-    type: 'object'
-
-  strategy:
-    type: 'string'
+    type: [ 'object' ]
+    default: []
 
   status:
     type: 'string'
@@ -31,6 +29,14 @@ properties:
   count:
     type: 'number'
     default: 0
+
+  attempts:
+    type: 'number'
+    default: 5
+
+  remaining:
+    type: 'number'
+    default: 5
 
   delay:
     type: 'date'

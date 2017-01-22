@@ -1,5 +1,4 @@
 loopback = require 'loopback'
-async = require 'async'
 
 { EventEmitter } = require 'events'
 
@@ -69,12 +68,8 @@ module.exports = (Worker) ->
     for name of callbacks
       @callbacks[name] = callbacks[name]
 
-  Worker::strategies = (strategies) ->
-    for name of strategies
-      @strategies[name] = strategies[name]
-
   Worker::start = ->
-    if @queues.length == 0
+    if @queues.length is 0
       return setTimeout @start.bind(this), @interval
 
     @working = true
@@ -113,7 +108,7 @@ module.exports = (Worker) ->
     if @empty < @queues.length
       @empty++
 
-    if @empty == @queues.length
+    if @empty is @queues.length
       @pollTimeout = setTimeout =>
         @pollTimeout = null
         @poll()
@@ -153,14 +148,20 @@ module.exports = (Worker) ->
     console.error err
 
     if err
-      task.error err, finish.bind(this, 'failed')
+      task.errored err, finish.bind(this, 'failed')
     else
+      result = result?.toObject?() or result
+
       task.complete result, finish.bind(this, 'complete')
 
   Worker::work = (task) ->
     finished = false
 
     done = (err, results) =>
+      return if finished
+
+      finished = true
+
       @done task, timer, err, results
 
     if task.timeout
@@ -168,46 +169,12 @@ module.exports = (Worker) ->
         done new Error 'timeout'
       , task.timeout
 
-    @process task, done
+    task.process @callbacks, done
 
-  Worker::process = (task, callback) ->
-    Profiler = loopback.getModel 'Profiler'
 
-    profiler = new Profiler
-      task: task
+  process.nextTick ->
+    worker = new Worker()
 
-    callbacks = @callbacks
+    worker.start()
 
-    stop = false
-
-    async.eachSeries task.chain, (item, done) ->
-      if stop
-        return done null, task.results
-
-      func = callbacks[item]
-
-      if not func
-        return done new Error 'No callback registered for `' + item + '`'
-
-      logger = profiler.start item
-
-      finish = (err, results) ->
-        if results
-          task.results = results
-
-        profiler.end item, ->
-          done err, task.results
-
-      context =
-        done: (err, results) ->
-          stop = true
-          finish err, results
-        log: logger
-
-      bound = func.bind context
-
-      bound task, finish
-    , (err) ->
-      callback err, task.results
-
-    return
+  return

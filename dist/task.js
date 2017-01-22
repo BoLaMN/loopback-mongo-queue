@@ -1,17 +1,15 @@
+var async, loopback;
+
+loopback = require('loopback');
+
+async = require('async');
+
 module.exports = function(Task) {
   Task.QUEUED = 'queued';
   Task.DEQUEUED = 'dequeued';
   Task.COMPLETE = 'complete';
   Task.FAILED = 'failed';
   Task.CANCELLED = 'cancelled';
-  Task.strategies = {
-    linear: function(attempts) {
-      return attempts.delay;
-    },
-    exponential: function(attempts) {
-      return attempts.delay * (attempts.count - attempts.remaining);
-    }
-  };
   Task.setter.chain = function(chain) {
     if (typeof chain === 'string') {
       chain = [chain];
@@ -23,23 +21,6 @@ module.exports = function(Task) {
       return void 0;
     }
     return this.$timeout = parseInt(timeout, 10);
-  };
-  Task.setter.attempts = function(attempts) {
-    var result;
-    if (attempts === void 0) {
-      return void 0;
-    }
-    if (typeof attempts !== 'object') {
-      throw new Error('attempts must be an object');
-    }
-    result = {
-      count: parseInt(attempts.count, 10)
-    };
-    if (attempts.delay !== void 0) {
-      result.delay = parseInt(attempts.delay, 10);
-      result.strategy = attempts.strategy;
-    }
-    return this.$attempts = result;
   };
   Task.dequeue = function(options, callback) {
     var connector, opts, query, sort, update;
@@ -111,13 +92,16 @@ module.exports = function(Task) {
     return Task.update(query, update, callback);
   };
   Task.prototype.log = function(name, log, callback) {
-    var update;
+    var base, name1, update;
     update = {};
-    update['events.' + name] = log.toObject();
+    update['events.' + this.count + '.' + name] = log.toObject();
     if (this.events == null) {
-      this.events = {};
+      this.events = [];
     }
-    this.events[name] = log;
+    if ((base = this.events)[name1 = this.count] == null) {
+      base[name1] = {};
+    }
+    this.events[this.count][name] = log;
     return this.update(update, callback);
   };
   Task.prototype.cancel = function(callback) {
@@ -136,35 +120,80 @@ module.exports = function(Task) {
       result: result
     }, callback);
   };
-  Task.prototype.error = function(err, callback) {
-    var remaining, strategies, strategy, wait;
-    remaining = 0;
-    strategies = Task.strategies;
+  Task.prototype.errored = function(err, callback) {
+    var wait;
     if (this.attempts) {
-      remaining = this.attempts.remaining = (this.attempts.remaining || this.attempts.count) - 1;
+      this.remaining = this.remaining - 1;
     }
-    if (remaining > 0) {
-      strategy = strategies[this.attempts.strategy || 'linear'];
-      if (!strategy) {
-        console.error('No such retry strategy: `' + this.attempts.strategy + '`');
-        console.error('Using linear strategy');
-      }
-      if (this.attempts.delay !== void 0) {
-        wait = strategy(this.attempts);
-      } else {
-        wait = 0;
-      }
-      return this.delay(wait, callback);
+    if (this.attempts !== this.count || this.remaining > 0) {
+      wait = 50 * Math.pow(2, this.count);
+      this.delay = new Date(new Date().getTime() + wait);
+      this.count = this.count + 1;
+      return this.reenqueue(callback);
     } else {
       return this.fail(err, callback);
     }
   };
-  return Task.prototype.fail = function(err, callback) {
+  Task.prototype.reenqueue = function(callback) {
+    return this.update({
+      status: Task.QUEUED,
+      enqueued: new Date,
+      remaining: this.remaining,
+      count: this.count,
+      delay: this.delay
+    }, callback);
+  };
+  Task.prototype.fail = function(err, callback) {
     return this.update({
       status: Task.FAILED,
       ended: new Date,
       error: err.message,
       stack: err.stack
     }, callback);
+  };
+  return Task.prototype.process = function(callbacks, callback) {
+    var Profiler, Worker, ccallbacks, profiler, stop, task;
+    if (!callback && typeof callbacks === 'function') {
+      callback = callbacks;
+      ccallbacks = null;
+    }
+    task = this;
+    Profiler = loopback.getModel('Profiler');
+    Worker = loopback.getModel('Worker');
+    profiler = new Profiler({
+      task: task
+    });
+    callbacks = callbacks || Worker.callbacks;
+    stop = false;
+    async.eachSeries(task.chain, function(item, done) {
+      var bound, context, finish, func, logger;
+      if (stop) {
+        return done(null, task.results);
+      }
+      func = callbacks[item];
+      if (!func) {
+        return done(new Error('No callback registered for `' + item + '`'));
+      }
+      logger = profiler.start(item);
+      finish = function(err, results) {
+        if (results) {
+          task.results = results;
+        }
+        return profiler.end(item, function() {
+          return done(err, task.results);
+        });
+      };
+      context = {
+        done: function(err, results) {
+          stop = true;
+          return finish(err, results);
+        },
+        log: logger
+      };
+      bound = func.bind(context);
+      return bound(task, finish);
+    }, function(err) {
+      return callback(err, task.results);
+    });
   };
 };

@@ -1,6 +1,6 @@
 {
   "name": "Queue",
-  "base": "Model",
+  "base": "PersistedModel",
   "mongodb": {
     "allowExtendedOperators": true
   },
@@ -8,10 +8,6 @@
     "name": {
       "type": "string",
       "default": "default"
-    },
-    "model": {
-      "type": "string",
-      "default": "Task"
     },
     "universal": {
       "type": "boolean",
